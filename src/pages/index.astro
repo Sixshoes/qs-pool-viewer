@@ -55,8 +55,6 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
       </div>
     </section>
 
-    <div id="loaded-meta" class="hidden text-xs text-slate-500"></div>
-
     <section id="panel-academic" class="tab-panel card-panel overflow-x-auto hidden" data-panel="academic">
       <h2 class="panel-title"><span class="panel-title-mark"></span>學術聯絡人池</h2>
       <div id="table-academic" class="mt-4"></div>
@@ -185,7 +183,6 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     $('pool-tabs').classList.remove('hidden');
     $('header-spacer')?.classList.add('hidden');
     $('btn-reupload').classList.remove('hidden');
-    $('loaded-meta').classList.remove('hidden');
     switchTab('academic');
   }
 
@@ -194,7 +191,6 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     $('pool-tabs').classList.add('hidden');
     $('header-spacer')?.classList.remove('hidden');
     $('btn-reupload').classList.add('hidden');
-    $('loaded-meta').classList.add('hidden');
     document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.add('hidden'));
     $('file-name').textContent = '';
     $('file-input').value = '';
@@ -236,7 +232,6 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     $('tab-count-academic').textContent = String(dataRowCount(academic));
     $('tab-count-employer').textContent = String(dataRowCount(employer));
     $('tab-count-submissions').textContent = String(dataRowCount(submissions));
-    $('loaded-meta').textContent = `檔案：${file.name}　｜　解析時間：${new Date().toLocaleString('zh-TW', { hour12: false })}（僅本機）`;
 
     renderTable('table-academic', academic);
     renderTable('table-employer', employer);
