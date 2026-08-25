@@ -15,12 +15,17 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
             從 Google 試算表下載 Excel 後上傳，在本機瀏覽器解析（檔案不會送到伺服器）。
           </p>
         </div>
-        <a href={submitSite} class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm hover:bg-white/20">
-          → 提交表單
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="btn-reupload" class="hidden rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20">
+            重新上傳
+          </button>
+          <a href={submitSite} class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm hover:bg-white/20">
+            → 提交表單
+          </a>
+        </div>
       </div>
 
-      <nav class="pool-tabs mt-6" aria-label="Pool 分頁">
+      <nav id="pool-tabs" class="pool-tabs mt-6 hidden" aria-label="Pool 分頁">
         <button type="button" class="pool-tab pool-tab--active" data-tab="academic" aria-selected="true">
           學術聯絡人池
           <span id="tab-count-academic" class="pool-tab-count">0</span>
@@ -34,47 +39,44 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
           <span id="tab-count-submissions" class="pool-tab-count">0</span>
         </button>
       </nav>
+      <div id="header-spacer" class="h-6"></div>
     </div>
   </header>
 
   <main class="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
-    <p class="info-banner">
-      試算表：檔案 → 下載 → Microsoft Excel (.xlsx)。需含「提交紀錄」「學術聯絡人」「雇主聯絡人」工作表。
-    </p>
-
-    <section class="card-panel">
-      <h2 class="panel-title"><span class="panel-title-mark"></span>上傳 Excel</h2>
-      <div id="upload-zone" class="upload-zone mt-4">
-        <p class="text-sm text-slate-600">拖曳 .xlsx 到這裡，或</p>
-        <label class="mt-3 inline-block cursor-pointer">
-          <span class="btn-primary">選擇檔案</span>
-          <input id="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" />
-        </label>
-        <p id="file-name" class="mt-3 text-sm font-medium text-fgu-dark"></p>
+    <section id="upload-section" class="space-y-4">
+      <p class="info-banner">
+        試算表：檔案 → 下載 → Microsoft Excel (.xlsx)。需含「提交紀錄」「學術聯絡人」「雇主聯絡人」工作表。
+      </p>
+      <div class="card-panel">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>上傳 Excel</h2>
+        <div id="upload-zone" class="upload-zone mt-4">
+          <p class="text-sm text-slate-600">拖曳 .xlsx 到這裡，或</p>
+          <label class="mt-3 inline-block cursor-pointer">
+            <span class="btn-primary">選擇檔案</span>
+            <input id="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" />
+          </label>
+          <p id="file-name" class="mt-3 text-sm font-medium text-fgu-dark"></p>
+        </div>
+        <p id="parse-error" class="mt-3 hidden text-sm text-red-700" role="alert"></p>
       </div>
-      <p id="parse-error" class="mt-3 hidden text-sm text-red-700" role="alert"></p>
-      <p id="file-meta" class="mt-2 hidden text-xs text-slate-500"></p>
     </section>
 
-    <section id="panel-academic" class="tab-panel card-panel overflow-x-auto" data-panel="academic">
+    <div id="loaded-meta" class="hidden text-xs text-slate-500"></div>
+
+    <section id="panel-academic" class="tab-panel card-panel overflow-x-auto hidden" data-panel="academic">
       <h2 class="panel-title"><span class="panel-title-mark"></span>學術聯絡人池</h2>
-      <div id="table-academic" class="mt-4">
-        <p class="text-sm text-slate-500">請先上傳 Excel</p>
-      </div>
+      <div id="table-academic" class="mt-4"></div>
     </section>
 
     <section id="panel-employer" class="tab-panel card-panel overflow-x-auto hidden" data-panel="employer">
       <h2 class="panel-title"><span class="panel-title-mark"></span>雇主聯絡人池</h2>
-      <div id="table-employer" class="mt-4">
-        <p class="text-sm text-slate-500">請先上傳 Excel</p>
-      </div>
+      <div id="table-employer" class="mt-4"></div>
     </section>
 
     <section id="panel-submissions" class="tab-panel card-panel overflow-x-auto hidden" data-panel="submissions">
       <h2 class="panel-title"><span class="panel-title-mark"></span>提交紀錄</h2>
-      <div id="table-submissions" class="mt-4">
-        <p class="text-sm text-slate-500">請先上傳 Excel</p>
-      </div>
+      <div id="table-submissions" class="mt-4"></div>
     </section>
   </main>
 </Layout>
@@ -185,6 +187,33 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     });
   }
 
+  function showLoadedUi() {
+    $('upload-section').classList.add('hidden');
+    $('pool-tabs').classList.remove('hidden');
+    $('header-spacer')?.classList.add('hidden');
+    $('btn-reupload').classList.remove('hidden');
+    $('loaded-meta').classList.remove('hidden');
+    switchTab('academic');
+  }
+
+  function resetToUpload() {
+    $('upload-section').classList.remove('hidden');
+    $('pool-tabs').classList.add('hidden');
+    $('header-spacer')?.classList.remove('hidden');
+    $('btn-reupload').classList.add('hidden');
+    $('loaded-meta').classList.add('hidden');
+    document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.add('hidden'));
+    $('file-name').textContent = '';
+    $('file-input').value = '';
+    showError('');
+    $('tab-count-academic').textContent = '0';
+    $('tab-count-employer').textContent = '0';
+    $('tab-count-submissions').textContent = '0';
+    $('table-academic').innerHTML = '';
+    $('table-employer').innerHTML = '';
+    $('table-submissions').innerHTML = '';
+  }
+
   async function parseFile(file) {
     showError('');
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
@@ -214,19 +243,20 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     $('tab-count-academic').textContent = String(dataRowCount(academic));
     $('tab-count-employer').textContent = String(dataRowCount(employer));
     $('tab-count-submissions').textContent = String(dataRowCount(submissions));
-
-    const meta = $('file-meta');
-    meta.textContent = `檔案：${file.name}　｜　解析時間：${new Date().toLocaleString('zh-TW', { hour12: false })}（僅本機）`;
-    meta.classList.remove('hidden');
+    $('loaded-meta').textContent = `檔案：${file.name}　｜　解析時間：${new Date().toLocaleString('zh-TW', { hour12: false })}（僅本機）`;
 
     renderTable('table-academic', academic);
     renderTable('table-employer', employer);
     renderTable('table-submissions', submissions);
-    switchTab('academic');
+    showLoadedUi();
   }
 
   document.querySelectorAll('.pool-tab').forEach((btn) => {
     btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+  });
+
+  $('btn-reupload')?.addEventListener('click', () => {
+    resetToUpload();
   });
 
   const zone = $('upload-zone');
