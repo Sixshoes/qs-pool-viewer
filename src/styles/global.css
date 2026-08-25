@@ -47,3 +47,52 @@ body {
 .info-banner {
   @apply rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600;
 }
+
+.pool-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.pool-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.pool-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pool-tab--active {
+  color: #fff;
+  border-bottom-color: var(--color-qs);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pool-tab-count {
+  display: inline-flex;
+  min-width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.25rem 0.45rem;
+}
+
+.pool-tab--active .pool-tab-count {
+  background: rgba(242, 169, 0, 0.35);
+}
