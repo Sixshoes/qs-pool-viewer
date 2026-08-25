@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fgu: #a6245c;
+  --color-fgu-dark: #8a1e4c;
+  --color-fgu-deep: #6b1639;
+  --color-fgu-light: #fdf2f7;
+  --color-qs: #f2a900;
+  --color-qs-light: #fff8e6;
+  --color-cream: #faf7f2;
+  --font-sans: "Segoe UI", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: linear-gradient(180deg, var(--color-cream) 0%, #f5f0eb 100%);
+}
+
+.card-panel {
+  @apply rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-sm;
+}
+
+.panel-title {
+  @apply flex items-center gap-2 text-base font-semibold text-slate-900;
+}
+
+.panel-title-mark {
+  @apply inline-block h-4 w-1 rounded-full bg-fgu;
+}
+
+.btn-primary {
+  @apply rounded-lg bg-fgu px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-fgu-dark;
+}
+
+.btn-secondary {
+  @apply rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50;
+}
+
+.upload-zone {
+  @apply rounded-xl border-2 border-dashed border-fgu/30 bg-fgu-light/40 px-6 py-10 text-center transition;
+}
+
+.upload-zone--active {
+  @apply border-fgu bg-fgu-light;
+}
+
+.info-banner {
+  @apply rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "qs-pool-viewer",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.2.1",
+    "exceljs": "^4.4.0",
+    "tailwindcss": "^4.3.3"
+  }
+}

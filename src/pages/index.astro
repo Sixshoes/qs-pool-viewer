@@ -1,0 +1,224 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL;
+const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
+---
+
+<Layout>
+  <header class="border-b border-fgu/20 bg-gradient-to-br from-fgu via-fgu-dark to-fgu-deep text-white">
+    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <p class="text-sm text-white/80">Fo Guang University · 永續辦內部工具</p>
+      <h1 class="mt-1 text-2xl font-bold sm:text-3xl">QS 聯絡人 Pool 解析</h1>
+      <p class="mt-2 max-w-2xl text-sm text-white/85">
+        從 Google 試算表下載 Excel 後上傳，在本機瀏覽器解析（檔案不會送到伺服器）。
+      </p>
+      <a href={submitSite} class="mt-4 inline-block rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm hover:bg-white/20">
+        → 前往聯絡人提交表單
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+    <p class="info-banner">
+      試算表：**檔案 → 下載 → Microsoft Excel (.xlsx)**。需含「提交紀錄」「學術聯絡人」「雇主聯絡人」工作表（與 Pool 腳本一致）。
+    </p>
+
+    <section class="card-panel">
+      <h2 class="panel-title"><span class="panel-title-mark"></span>上傳 Excel</h2>
+      <div id="upload-zone" class="upload-zone mt-4">
+        <p class="text-sm text-slate-600">拖曳 .xlsx 到這裡，或</p>
+        <label class="mt-3 inline-block cursor-pointer">
+          <span class="btn-primary">選擇檔案</span>
+          <input id="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" />
+        </label>
+        <p id="file-name" class="mt-3 text-sm font-medium text-fgu-dark"></p>
+      </div>
+      <p id="parse-error" class="mt-3 hidden text-sm text-red-700" role="alert"></p>
+    </section>
+
+    <section id="result-panel" class="hidden space-y-6">
+      <div class="card-panel">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>Pool 摘要</h2>
+        <p id="file-meta" class="mt-2 text-sm text-slate-600"></p>
+        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-xl border border-fgu/15 bg-fgu-light/60 px-4 py-3">
+            <p class="text-xs font-medium text-fgu-dark">提交批次數</p>
+            <p id="stat-submissions" class="mt-1 text-2xl font-bold text-fgu-deep">0</p>
+          </div>
+          <div class="rounded-xl border border-fgu/15 bg-white px-4 py-3">
+            <p class="text-xs font-medium text-fgu-dark">學術聯絡人</p>
+            <p id="stat-academic" class="mt-1 text-2xl font-bold text-fgu-deep">0</p>
+          </div>
+          <div class="rounded-xl border border-qs/30 bg-qs-light/50 px-4 py-3">
+            <p class="text-xs font-medium text-amber-900">雇主聯絡人</p>
+            <p id="stat-employer" class="mt-1 text-2xl font-bold text-amber-950">0</p>
+          </div>
+        </div>
+        <p id="parsed-at" class="mt-3 text-xs text-slate-500"></p>
+      </div>
+
+      <div class="card-panel overflow-x-auto">
+        <h3 class="panel-title"><span class="panel-title-mark"></span>提交紀錄</h3>
+        <div id="table-submissions" class="mt-4"></div>
+      </div>
+      <div class="card-panel overflow-x-auto">
+        <h3 class="panel-title"><span class="panel-title-mark"></span>學術聯絡人</h3>
+        <div id="table-academic" class="mt-4"></div>
+      </div>
+      <div class="card-panel overflow-x-auto">
+        <h3 class="panel-title"><span class="panel-title-mark"></span>雇主聯絡人</h3>
+        <div id="table-employer" class="mt-4"></div>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  import ExcelJS from 'exceljs';
+
+  const SHEETS = {
+    submissions: '提交紀錄',
+    academic: '學術聯絡人',
+    employer: '雇主聯絡人',
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
+  }
+
+  function cellText(cell) {
+    if (!cell || cell.value == null) return '';
+    const v = cell.value;
+    if (typeof v === 'object' && v !== null) {
+      if ('text' in v && v.text != null) return String(v.text);
+      if ('result' in v && v.result != null) return String(v.result);
+      if ('richText' in v && Array.isArray(v.richText)) {
+        return v.richText.map((r) => r.text || '').join('');
+      }
+      if (v instanceof Date) return v.toLocaleString('zh-TW', { hour12: false });
+    }
+    return String(v);
+  }
+
+  function sheetToMatrix(worksheet) {
+    if (!worksheet) return [];
+    const rows = [];
+    worksheet.eachRow({ includeEmpty: false }, (row) => {
+      const vals = [];
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        vals[colNumber - 1] = cellText(cell);
+      });
+      rows.push(vals);
+    });
+    if (!rows.length) return [];
+    const width = Math.max(...rows.map((r) => r.length));
+    return rows.map((r) => {
+      const out = [...r];
+      while (out.length < width) out.push('');
+      return out;
+    });
+  }
+
+  function dataRowCount(matrix) {
+    return matrix.length > 1 ? matrix.length - 1 : 0;
+  }
+
+  function renderTable(containerId, matrix, maxRows = 50) {
+    const el = $(containerId);
+    if (!matrix || matrix.length < 2) {
+      el.innerHTML = '<p class="text-sm text-slate-500">尚無資料</p>';
+      return;
+    }
+    const headers = matrix[0];
+    const rows = matrix.slice(1).slice(-maxRows).reverse();
+    const th = headers.map((h) => `<th class="whitespace-nowrap border-b border-slate-200 px-2 py-2 text-left text-xs font-semibold text-slate-600">${escapeHtml(h)}</th>`).join('');
+    const tbody = rows
+      .map((row) => {
+        const tds = headers
+          .map((_, i) => {
+            const t = row[i] ?? '';
+            return `<td class="max-w-[14rem] truncate border-b border-slate-100 px-2 py-2 text-xs text-slate-700" title="${escapeHtml(t)}">${escapeHtml(t)}</td>`;
+          })
+          .join('');
+        return `<tr class="hover:bg-slate-50">${tds}</tr>`;
+      })
+      .join('');
+    el.innerHTML = `<table class="min-w-full border-collapse"><thead><tr>${th}</tr></thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  function showError(msg) {
+    const el = $('parse-error');
+    if (!msg) {
+      el.classList.add('hidden');
+      el.textContent = '';
+      return;
+    }
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  async function parseFile(file) {
+    showError('');
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      showError('請上傳 .xlsx 檔案（從 Google 試算表下載的 Excel 格式）。');
+      return;
+    }
+
+    $('file-name').textContent = file.name;
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+
+    const submissionsWs = wb.getWorksheet(SHEETS.submissions);
+    const academicWs = wb.getWorksheet(SHEETS.academic);
+    const employerWs = wb.getWorksheet(SHEETS.employer);
+
+    if (!submissionsWs && !academicWs && !employerWs) {
+      const names = wb.worksheets.map((w) => w.name).join('、');
+      showError(`找不到「提交紀錄／學術聯絡人／雇主聯絡人」工作表。此檔工作表：${names || '（無）'}`);
+      return;
+    }
+
+    const submissions = sheetToMatrix(submissionsWs);
+    const academic = sheetToMatrix(academicWs);
+    const employer = sheetToMatrix(employerWs);
+
+    $('stat-submissions').textContent = String(dataRowCount(submissions));
+    $('stat-academic').textContent = String(dataRowCount(academic));
+    $('stat-employer').textContent = String(dataRowCount(employer));
+    $('file-meta').textContent = `檔案：${file.name}`;
+    $('parsed-at').textContent = `解析時間：${new Date().toLocaleString('zh-TW', { hour12: false })}（僅在本機瀏覽器處理）`;
+
+    renderTable('table-submissions', submissions, 50);
+    renderTable('table-academic', academic, 50);
+    renderTable('table-employer', employer, 50);
+    $('result-panel').classList.remove('hidden');
+  }
+
+  const zone = $('upload-zone');
+  const input = $('file-input');
+
+  input?.addEventListener('change', () => {
+    const file = input.files?.[0];
+    if (file) parseFile(file).catch((err) => showError(err.message || String(err)));
+  });
+
+  zone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('upload-zone--active');
+  });
+  zone?.addEventListener('dragleave', () => zone.classList.remove('upload-zone--active'));
+  zone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('upload-zone--active');
+    const file = e.dataTransfer?.files?.[0];
+    if (file) parseFile(file).catch((err) => showError(err.message || String(err)));
+  });
+</script>
