@@ -6,7 +6,7 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
 
 <Layout>
   <header class="border-b border-fgu/20 bg-gradient-to-br from-fgu via-fgu-dark to-fgu-deep text-white">
-    <div class="mx-auto max-w-5xl px-4 pt-8 sm:px-6">
+    <div class="w-full px-3 pt-6 sm:px-4">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold sm:text-3xl">QS 聯絡人 Pool 解析</h1>
@@ -39,7 +39,7 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     </div>
   </header>
 
-  <main class="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+  <main class="w-full space-y-4 px-3 py-6 sm:px-4">
     <section id="upload-section" class="space-y-4">
       <div class="card-panel">
         <h2 class="panel-title"><span class="panel-title-mark"></span>上傳 Excel</h2>
@@ -147,7 +147,7 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
         const tds = headers
           .map((_, i) => {
             const t = row[i] ?? '';
-            return `<td class="max-w-[14rem] truncate border-b border-slate-100 px-2 py-2 text-xs text-slate-700" title="${escapeHtml(t)}">${escapeHtml(t)}</td>`;
+            return `<td class="whitespace-nowrap border-b border-slate-100 px-2 py-2 text-xs text-slate-700">${escapeHtml(t)}</td>`;
           })
           .join('');
         return `<tr class="hover:bg-slate-50">${tds}</tr>`;
