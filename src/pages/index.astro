@@ -34,6 +34,14 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
           提交紀錄
           <span id="tab-count-submissions" class="pool-tab-count">0</span>
         </button>
+        <button type="button" class="pool-tab" data-tab="prior-academic" aria-selected="false">
+          去年學術
+          <span id="tab-count-prior-academic" class="pool-tab-count">0</span>
+        </button>
+        <button type="button" class="pool-tab" data-tab="prior-employer" aria-selected="false">
+          去年雇主
+          <span id="tab-count-prior-employer" class="pool-tab-count">0</span>
+        </button>
       </nav>
       <div id="header-spacer" class="h-6"></div>
     </div>
@@ -55,19 +63,49 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
       </div>
     </section>
 
-    <section id="panel-academic" class="tab-panel card-panel overflow-x-auto hidden" data-panel="academic">
-      <h2 class="panel-title"><span class="panel-title-mark"></span>學術聯絡人池</h2>
-      <div id="table-academic" class="mt-4"></div>
+    <section id="panel-academic" class="tab-panel card-panel hidden" data-panel="academic">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>學術聯絡人池</h2>
+        <input type="search" class="search-input" data-search="academic" placeholder="搜尋學術聯絡人…" aria-label="搜尋學術聯絡人" />
+      </div>
+      <p id="notice-academic" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div id="table-academic" class="mt-4 overflow-x-auto"></div>
     </section>
 
-    <section id="panel-employer" class="tab-panel card-panel overflow-x-auto hidden" data-panel="employer">
-      <h2 class="panel-title"><span class="panel-title-mark"></span>雇主聯絡人池</h2>
-      <div id="table-employer" class="mt-4"></div>
+    <section id="panel-employer" class="tab-panel card-panel hidden" data-panel="employer">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>雇主聯絡人池</h2>
+        <input type="search" class="search-input" data-search="employer" placeholder="搜尋雇主聯絡人…" aria-label="搜尋雇主聯絡人" />
+      </div>
+      <p id="notice-employer" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div id="table-employer" class="mt-4 overflow-x-auto"></div>
     </section>
 
-    <section id="panel-submissions" class="tab-panel card-panel overflow-x-auto hidden" data-panel="submissions">
-      <h2 class="panel-title"><span class="panel-title-mark"></span>提交紀錄</h2>
-      <div id="table-submissions" class="mt-4"></div>
+    <section id="panel-submissions" class="tab-panel card-panel hidden" data-panel="submissions">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>提交紀錄</h2>
+        <input type="search" class="search-input" data-search="submissions" placeholder="搜尋提交紀錄…" aria-label="搜尋提交紀錄" />
+      </div>
+      <p id="notice-submissions" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div id="table-submissions" class="mt-4 overflow-x-auto"></div>
+    </section>
+
+    <section id="panel-prior-academic" class="tab-panel card-panel hidden" data-panel="prior-academic">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>去年學術名單（2027）</h2>
+        <input type="search" class="search-input" data-search="prior-academic" placeholder="搜尋去年學術…" aria-label="搜尋去年學術" />
+      </div>
+      <p id="notice-prior-academic" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div id="table-prior-academic" class="mt-4 overflow-x-auto"></div>
+    </section>
+
+    <section id="panel-prior-employer" class="tab-panel card-panel hidden" data-panel="prior-employer">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="panel-title"><span class="panel-title-mark"></span>去年雇主名單（2027）</h2>
+        <input type="search" class="search-input" data-search="prior-employer" placeholder="搜尋去年雇主…" aria-label="搜尋去年雇主" />
+      </div>
+      <p id="notice-prior-employer" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div id="table-prior-employer" class="mt-4 overflow-x-auto"></div>
     </section>
   </main>
 </Layout>
@@ -75,10 +113,32 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
 <script>
   import ExcelJS from 'exceljs';
 
-  const SHEETS = {
-    submissions: '提交紀錄',
-    academic: '學術聯絡人',
-    employer: '雇主聯絡人',
+  const SHEET_CANDIDATES = {
+    submissions: ['提交紀錄'],
+    academic: ['2028學術聯絡人', '學術聯絡人'],
+    employer: ['2028雇主聯絡人', '雇主聯絡人'],
+    'prior-academic': ['2027學術聯絡人', '去年學術聯絡人'],
+    'prior-employer': ['2027雇主聯絡人', '去年雇主聯絡人'],
+  };
+
+  const TAB_IDS = ['academic', 'employer', 'submissions', 'prior-academic', 'prior-employer'];
+  const MAX_LIVE_ROWS = 500;
+  const MAX_PRIOR_ROWS = 5000;
+
+  const poolCache = {
+    academic: [],
+    employer: [],
+    submissions: [],
+    'prior-academic': [],
+    'prior-employer': [],
+  };
+
+  const searchQueries = {
+    academic: '',
+    employer: '',
+    submissions: '',
+    'prior-academic': '',
+    'prior-employer': '',
   };
 
   const $ = (id) => document.getElementById(id);
@@ -91,18 +151,44 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
       .replaceAll('"', '&quot;');
   }
 
-  function cellText(cell) {
-    if (!cell || cell.value == null) return '';
-    const v = cell.value;
-    if (typeof v === 'object' && v !== null) {
-      if ('text' in v && v.text != null) return String(v.text);
-      if ('result' in v && v.result != null) return String(v.result);
+  function extractValueText(v) {
+    if (v == null) return '';
+    if (v instanceof Date) return v.toLocaleString('zh-TW', { hour12: false });
+    if (typeof v === 'object') {
       if ('richText' in v && Array.isArray(v.richText)) {
-        return v.richText.map((r) => r.text || '').join('');
+        return v.richText.map((r) => r?.text ?? '').join('');
       }
-      if (v instanceof Date) return v.toLocaleString('zh-TW', { hour12: false });
+      if ('text' in v && v.text != null) {
+        return extractValueText(v.text);
+      }
+      if ('result' in v) {
+        const res = v.result;
+        if (res == null) return '';
+        if (typeof res === 'object' && 'error' in res) return String(res.error ?? '');
+        return extractValueText(res);
+      }
+      if ('error' in v && v.error != null) {
+        return String(v.error);
+      }
+      if ('formula' in v || 'sharedFormula' in v) {
+        return '';
+      }
+      return '';
     }
     return String(v);
+  }
+
+  function cellText(cell) {
+    if (!cell || cell.value == null) return '';
+    return extractValueText(cell.value);
+  }
+
+  function findWorksheet(workbook, candidates) {
+    for (const name of candidates) {
+      const ws = workbook.getWorksheet(name);
+      if (ws) return ws;
+    }
+    return null;
   }
 
   function sheetToMatrix(worksheet) {
@@ -113,7 +199,9 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         vals[colNumber - 1] = cellText(cell);
       });
-      rows.push(vals);
+      if (vals.some((v) => v.trim() !== '')) {
+        rows.push(vals);
+      }
     });
     if (!rows.length) return [];
     const width = Math.max(...rows.map((r) => r.length));
@@ -128,14 +216,67 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     return matrix.length > 1 ? matrix.length - 1 : 0;
   }
 
-  function renderTable(containerId, matrix, maxRows = 200) {
-    const el = $(containerId);
+  function tableOptions(tabId) {
+    if (tabId.startsWith('prior-')) {
+      return { reverse: false, maxRows: MAX_PRIOR_ROWS };
+    }
+    return { reverse: true, maxRows: MAX_LIVE_ROWS };
+  }
+
+  function filterRows(matrix, query) {
+    if (!matrix || matrix.length < 2) return [];
+    const rows = matrix.slice(1);
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((row) => row.some((cell) => String(cell ?? '').toLowerCase().includes(q)));
+  }
+
+  function renderTable(tabId, matrix, query = '') {
+    const el = $(`table-${tabId}`);
+    const noticeEl = $(`notice-${tabId}`);
+    if (!el) return;
+
     if (!matrix || matrix.length < 2) {
       el.innerHTML = '<p class="text-sm text-slate-500">尚無資料</p>';
+      if (noticeEl) {
+        noticeEl.classList.add('hidden');
+        noticeEl.textContent = '';
+      }
       return;
     }
+
     const headers = matrix[0];
-    const rows = matrix.slice(1).slice(-maxRows).reverse();
+    const { reverse, maxRows } = tableOptions(tabId);
+    const filtered = filterRows(matrix, query);
+    const total = filtered.length;
+    const trimmedQuery = String(query || '').trim();
+
+    if (trimmedQuery && total === 0) {
+      el.innerHTML = `<p class="text-sm text-slate-500">沒有符合「${escapeHtml(trimmedQuery)}」的資料</p>`;
+      if (noticeEl) {
+        noticeEl.classList.add('hidden');
+        noticeEl.textContent = '';
+      }
+      return;
+    }
+
+    const truncated = total > maxRows;
+    const rows = truncated ? filtered.slice(-maxRows) : filtered.slice();
+    if (reverse) rows.reverse();
+
+    if (noticeEl) {
+      if (truncated) {
+        noticeEl.textContent = `共 ${total} 筆${trimmedQuery ? '（符合搜尋）' : ''}，目前顯示最近 ${maxRows} 筆（可用右上角搜尋篩選全部資料）`;
+        noticeEl.classList.remove('hidden');
+      } else if (trimmedQuery) {
+        noticeEl.textContent = `符合搜尋：${total} 筆`;
+        noticeEl.classList.remove('hidden');
+      } else {
+        noticeEl.classList.add('hidden');
+        noticeEl.textContent = '';
+      }
+    }
+
     const th = headers
       .map(
         (h) =>
@@ -147,13 +288,19 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
         const tds = headers
           .map((_, i) => {
             const t = row[i] ?? '';
-            return `<td class="whitespace-nowrap border-b border-slate-100 px-2 py-2 text-xs text-slate-700">${escapeHtml(t)}</td>`;
+            return `<td title="${escapeHtml(t)}" class="max-w-xs truncate whitespace-nowrap border-b border-slate-100 px-2 py-2 text-xs text-slate-700">${escapeHtml(t)}</td>`;
           })
           .join('');
         return `<tr class="hover:bg-slate-50">${tds}</tr>`;
       })
       .join('');
     el.innerHTML = `<table class="min-w-full border-collapse"><thead><tr>${th}</tr></thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  function renderAllTables() {
+    for (const tabId of TAB_IDS) {
+      renderTable(tabId, poolCache[tabId], searchQueries[tabId]);
+    }
   }
 
   function showError(msg) {
@@ -178,12 +325,12 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     });
   }
 
-  function showLoadedUi() {
+  function showLoadedUi(defaultTab = 'academic') {
     $('upload-section').classList.add('hidden');
     $('pool-tabs').classList.remove('hidden');
     $('header-spacer')?.classList.add('hidden');
     $('btn-reupload').classList.remove('hidden');
-    switchTab('academic');
+    switchTab(defaultTab);
   }
 
   function resetToUpload() {
@@ -195,16 +342,27 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     $('file-name').textContent = '';
     $('file-input').value = '';
     showError('');
-    $('tab-count-academic').textContent = '0';
-    $('tab-count-employer').textContent = '0';
-    $('tab-count-submissions').textContent = '0';
-    $('table-academic').innerHTML = '';
-    $('table-employer').innerHTML = '';
-    $('table-submissions').innerHTML = '';
+    for (const tabId of TAB_IDS) {
+      poolCache[tabId] = [];
+      searchQueries[tabId] = '';
+      const countEl = $(`tab-count-${tabId}`);
+      if (countEl) countEl.textContent = '0';
+      const tableEl = $(`table-${tabId}`);
+      if (tableEl) tableEl.innerHTML = '';
+      const noticeEl = $(`notice-${tabId}`);
+      if (noticeEl) {
+        noticeEl.classList.add('hidden');
+        noticeEl.textContent = '';
+      }
+    }
+    document.querySelectorAll('.search-input').forEach((input) => {
+      input.value = '';
+    });
   }
 
   async function parseFile(file) {
     showError('');
+    $('file-name').textContent = '';
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
       showError('請上傳 .xlsx 檔案（從 Google 試算表下載的 Excel 格式）。');
       return;
@@ -215,32 +373,48 @@ const submitSite = 'https://sixshoes.github.io/qs-contact-submission/';
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(await file.arrayBuffer());
 
-    const submissionsWs = wb.getWorksheet(SHEETS.submissions);
-    const academicWs = wb.getWorksheet(SHEETS.academic);
-    const employerWs = wb.getWorksheet(SHEETS.employer);
+    const matchedSheets = {};
+    let foundAny = false;
+    for (const tabId of TAB_IDS) {
+      const ws = findWorksheet(wb, SHEET_CANDIDATES[tabId]);
+      matchedSheets[tabId] = ws;
+      if (ws) foundAny = true;
+    }
 
-    if (!submissionsWs && !academicWs && !employerWs) {
+    if (!foundAny) {
       const names = wb.worksheets.map((w) => w.name).join('、');
-      showError(`找不到「提交紀錄／學術聯絡人／雇主聯絡人」工作表。此檔工作表：${names || '（無）'}`);
+      showError(
+        `找不到「提交紀錄／2028學術聯絡人／2028雇主聯絡人／2027學術聯絡人／2027雇主聯絡人」工作表。此檔工作表：${names || '（無）'}`,
+      );
       return;
     }
 
-    const submissions = sheetToMatrix(submissionsWs);
-    const academic = sheetToMatrix(academicWs);
-    const employer = sheetToMatrix(employerWs);
+    for (const tabId of TAB_IDS) {
+      poolCache[tabId] = sheetToMatrix(matchedSheets[tabId]);
+      searchQueries[tabId] = '';
+      const countEl = $(`tab-count-${tabId}`);
+      if (countEl) countEl.textContent = String(dataRowCount(poolCache[tabId]));
+    }
+    document.querySelectorAll('.search-input').forEach((input) => {
+      input.value = '';
+    });
 
-    $('tab-count-academic').textContent = String(dataRowCount(academic));
-    $('tab-count-employer').textContent = String(dataRowCount(employer));
-    $('tab-count-submissions').textContent = String(dataRowCount(submissions));
-
-    renderTable('table-academic', academic);
-    renderTable('table-employer', employer);
-    renderTable('table-submissions', submissions);
-    showLoadedUi();
+    renderAllTables();
+    const firstNonEmptyTab = TAB_IDS.find((id) => dataRowCount(poolCache[id]) > 0) || 'academic';
+    showLoadedUi(matchedSheets.academic ? 'academic' : firstNonEmptyTab);
   }
 
   document.querySelectorAll('.pool-tab').forEach((btn) => {
     btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+  });
+
+  document.querySelectorAll('.search-input').forEach((input) => {
+    input.addEventListener('input', () => {
+      const tabId = input.getAttribute('data-search');
+      if (!tabId) return;
+      searchQueries[tabId] = input.value;
+      renderTable(tabId, poolCache[tabId], searchQueries[tabId]);
+    });
   });
 
   $('btn-reupload')?.addEventListener('click', () => {

@@ -96,3 +96,9 @@ body {
 .pool-tab--active .pool-tab-count {
   background: rgba(242, 169, 0, 0.35);
 }
+
+.search-input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-800 shadow-xs transition sm:max-w-xs;
+  @apply focus:border-fgu focus:outline-none focus:ring-2 focus:ring-fgu/20;
+}
+
